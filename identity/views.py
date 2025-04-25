@@ -213,7 +213,8 @@ class IdentityImageView(APIView):
             try:
                 font = ImageFont.truetype("arial.ttf", 60)
             except:
-                font = ImageFont.load_default()
+                print('pop')
+                font = ImageFont.load_default(60)
             draw.ellipse((40, 40, 160, 160), fill=(255, 140, 0))
             text = str(val)
             bbox = draw.textbbox((0, 0), text, font=font)
