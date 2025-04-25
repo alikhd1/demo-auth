@@ -10,8 +10,15 @@ from .models import UserProfile, CaptchaImage
 import random
 from .serializers import RegisterSerializer, VerifyCodeSerializer, LoginSerializer
 from .utils import IdentityUtils
-from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.utils import swagger_auto_schema, no_body
 from drf_yasg import openapi
+
+import io
+import random
+import string
+import qrcode
+from django.http import HttpResponse
+
 
 class RegisterView(APIView):
     @swagger_auto_schema(
@@ -263,3 +270,21 @@ class VerifyCodeView(APIView):
             return Response({'status': 'success'})
         else:
             return Response({'status': 'fail'})
+
+
+def generate_random_qr_code(request):
+    # Generate random text
+    random_text = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+
+    # Generate QR code
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(random_text)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="#F2ECCF", back_color="#d45930")
+
+    # Convert image to bytes
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+
+    return HttpResponse(buffer, content_type="image/png")
