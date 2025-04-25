@@ -1,6 +1,8 @@
 import base64
 import math
-from django.http import HttpResponse
+import os
+
+from django.http import HttpResponse, JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -272,19 +274,30 @@ class VerifyCodeView(APIView):
             return Response({'status': 'fail'})
 
 
-def generate_random_qr_code(request):
+def generate_custom_qr_code(request):
     # Generate random text
     random_text = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
     # Generate QR code
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr = qrcode.QRCode(
+        version=1,
+        box_size=10,
+        border=4
+    )
     qr.add_data(random_text)
     qr.make(fit=True)
+
+    # Generate QR image with custom colors
     img = qr.make_image(fill_color="#F2ECCF", back_color="#d45930")
 
-    # Convert image to bytes
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    buffer.seek(0)
+    # Save the image to the media folder
+    image_name = f"{random_text}.png"
+    image_path = os.path.join(settings.MEDIA_ROOT, image_name)
 
-    return HttpResponse(buffer, content_type="image/png")
+    # Write image to storage
+    img.save(image_path)
+
+    # Generate the URL of the saved image
+    image_url = os.path.join(settings.MEDIA_URL, image_name)
+
+    return JsonResponse({"qr_code_url": image_url})
