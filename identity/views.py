@@ -299,6 +299,6 @@ def generate_custom_qr_code(request):
     img.save(image_path)
 
     # Generate the URL of the saved image
-    image_url = request.build_absolute_uri(settings.MEDIA_URL + image_name)
+    image_url = os.path.join(settings.MEDIA_URL, image_name)
 
     return JsonResponse({"qr_code_url": image_url})
