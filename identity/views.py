@@ -211,7 +211,7 @@ class IdentityImageView(APIView):
             img = Image.new('RGB', (200, 200), color=(255, 235, 200))
             draw = ImageDraw.Draw(img)
             try:
-                font = ImageFont.truetype("arial.ttf", 40)
+                font = ImageFont.truetype("arial.ttf", 60)
             except:
                 font = ImageFont.load_default()
             draw.ellipse((40, 40, 160, 160), fill=(255, 140, 0))
