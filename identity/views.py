@@ -230,7 +230,8 @@ class IdentityImageView(APIView):
             buffer = BytesIO()
             img.save(buffer, format="PNG")
             path = default_storage.save(filename, ContentFile(buffer.getvalue()))
-
+            print('pooooop')
+            print(path)
             # Save to DB
             CaptchaImage.objects.create(
                 image_id=image_id,
