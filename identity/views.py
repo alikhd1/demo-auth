@@ -104,7 +104,7 @@ class LoginView(APIView):
         else:
             pass
 
-        return Response({'status': 'ok', 'message': 'Code sent successfully'})
+        return Response({'status': 'ok', 'message': 'Code sent successfully', 'phone': phone})
 
 
 class IdentityImageView(APIView):
