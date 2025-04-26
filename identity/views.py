@@ -168,7 +168,7 @@ class IdentityImageView(APIView):
             try:
                 font = ImageFont.truetype("arial.ttf", size=circle_size // 3)
             except:
-                font = ImageFont.load_default()
+                font = ImageFont.load_default(60)
 
             text = str(val)
             bbox = draw.textbbox((0, 0), text, font=font)
@@ -194,7 +194,8 @@ class IdentityImageView(APIView):
                 image_file=path
             )
 
-            image_url = request.build_absolute_uri(settings.MEDIA_URL + filename)
+            image_url = os.path.join(settings.MEDIA_URL, filename)
+            image_url = f'http://api.irandemo.online{image_url}'
             response_data.append({
                 "image_id": str(image_id),
                 "image_url": image_url
