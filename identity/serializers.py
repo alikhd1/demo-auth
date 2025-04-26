@@ -12,6 +12,14 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("کد ملی وارد شده معتبر نیست.")
         return value
 
+    class Meta:
+        swagger_schema_fields = {
+            "example": {
+                "national_code": "1234567890",
+                "method": "sms"
+            }
+        }
+
 
 class RegisterSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=11, min_length=11, required=True)
@@ -30,7 +38,25 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("کد ملی وارد شده معتبر نیست.")
         return value
 
+    class Meta:
+        swagger_schema_fields = {
+            "example": {
+                "phone": "09123456789",
+                "national_code": "1234567890",
+                "method": "sms"
+            }
+        }
+
 
 class VerifyCodeSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=15)
     image_id = serializers.CharField(max_length=50)
+
+
+    class Meta:
+        swagger_schema_fields = {
+            "example": {
+                "phone": "09123456789",
+                "image_id": "6ec7c7fc-937a-4a49-91c1-1f9a7ffe38f3"
+            }
+        }

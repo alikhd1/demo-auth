@@ -27,23 +27,8 @@ SECRET_KEY = 'django-insecure-3-cd5pg7dqxb_u+bx2+q-v(vd$pv*%(1o&=#962t(l(i841jd*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = []
 
-CORS_ORIGIN_ALLOW_ALL = True
-
-CORS_ORIGIN_WHITELIST = []
-
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
 
 # Application definition
 
@@ -56,15 +41,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'identity',
-    'drf_yasg',
-    'corsheaders',
-
+    'drf_yasg'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -146,7 +128,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 KAVENEGAR_API_KEY = os.getenv('KAVENEGAR_API_KEY')
 KAVENEGAR_SENDER = os.getenv('KAVENEGAR_SENDER')
-KAVENEGAR_TEMPLATE = os.getenv('KAVENEGAR_TEMPLATE')
+KAVENEGAR_SMS_TEMPLATE = os.getenv('KAVENEGAR_SMS_TEMPLATE')
+KAVENEGAR_CALL_TEMPLATE = os.getenv('KAVENEGAR_CALL_TEMPLATE')
+
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

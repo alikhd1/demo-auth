@@ -14,7 +14,10 @@ from .serializers import RegisterSerializer, VerifyCodeSerializer, LoginSerializ
 from .utils import IdentityUtils
 from drf_yasg.utils import swagger_auto_schema, no_body
 from drf_yasg import openapi
-
+import uuid
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.conf import settings
 import io
 import random
 import string
@@ -51,9 +54,9 @@ class RegisterView(APIView):
         )
 
         if method == 'sms':
-            IdentityUtils.send_sms(phone, code)
+            IdentityUtils.send_verification_code(phone, code, settings.KAVENEGAR_SMS_TEMPLATE)
         elif method == 'call':
-            IdentityUtils.send_voice_call(phone, code)
+            IdentityUtils.send_verification_code(phone, code, settings.KAVENEGAR_CALL_TEMPLATE)
         else:
             pass
 
@@ -95,90 +98,16 @@ class LoginView(APIView):
         user.save()
 
         if method == 'sms':
-            IdentityUtils.send_sms(phone, code)
+            IdentityUtils.send_verification_code(phone, code, settings.KAVENEGAR_SMS_TEMPLATE)
         elif method == 'call':
-            IdentityUtils.send_voice_call(phone, code)
+            IdentityUtils.send_verification_code(phone, code, settings.KAVENEGAR_CALL_TEMPLATE)
         else:
             pass
 
-        return Response({'status': 'ok', 'message': 'Code sent successfully', 'phone': phone})
+        return Response({'status': 'ok', 'message': 'Code sent successfully'})
 
-
-# class IdentityImageView(APIView):
-#     operation_description = "Login using phone",
-#
-#     @swagger_auto_schema(
-#         operation_description="Get user by phone",
-#         manual_parameters=[
-#             openapi.Parameter(
-#                 'phone',
-#                 openapi.IN_QUERY,
-#                 description="Phone number",
-#                 type=openapi.TYPE_STRING
-#             )
-#         ],
-#         responses={200: openapi.Response('OK'), 400: 'Bad request'}
-#     )
-#
-#
-#     def get(self, request):
-#         phone = request.GET.get('phone')
-#         if not phone:
-#             return Response({'error': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         try:
-#             pr = UserProfile.objects.get(phone=phone)
-#         except UserProfile.DoesNotExist:
-#             return Response({'error': 'Phone number not found'}, status=status.HTTP_404_NOT_FOUND)
-#
-#         options = [random.randint(100, 999) for _ in range(5)]
-#         if pr.code not in options:
-#             options[random.randint(0, 4)] = int(pr.code)
-#
-#         width, height = 700, 400
-#         img = Image.new('RGB', (width, height), color=(255, 235, 200))
-#         draw = ImageDraw.Draw(img)
-#
-#         try:
-#             font = ImageFont.truetype("arial.ttf", 40)
-#         except:
-#             font = ImageFont.load_default()
-#
-#         cx, cy = width // 2, height // 2
-#         radius = 120
-#
-#         angle_gap = 360 / len(options)
-#         for i, val in enumerate(options):
-#             angle = math.radians(angle_gap * i)
-#             x = cx + radius * math.cos(angle)
-#             y = cy + radius * math.sin(angle)
-#
-#             draw.ellipse((x - 40, y - 40, x + 40, y + 40), fill=(255, 140, 0))
-#
-#             text = str(val)
-#             text_bbox = draw.textbbox((0, 0), text, font=font)
-#             text_width = text_bbox[2] - text_bbox[0]
-#             text_height = text_bbox[3] - text_bbox[1]
-#
-#             text_x = x - text_width // 2
-#             text_y = y - text_height // 2
-#
-#             draw.text((text_x, text_y), text, fill=(255, 255, 255), font=font)
-#
-#         buffer = BytesIO()
-#         img.save(buffer, format='PNG')
-#         buffer.seek(0)
-#
-#         return HttpResponse(buffer, content_type='image/png')
-import uuid
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
-from django.conf import settings
 
 class IdentityImageView(APIView):
-    operation_description = "Login using phone",
-
-
     @swagger_auto_schema(
         operation_description="Get user by phone",
         manual_parameters=[
@@ -208,20 +137,47 @@ class IdentityImageView(APIView):
         response_data = []
 
         for val in options:
-            img = Image.new('RGB', (200, 200), color=(255, 235, 200))
+            circle_size = random.randint(120, 180)
+
+            img_size = circle_size + 40
+            img = Image.new('RGB', (img_size, img_size), color=(255, 248, 231))
             draw = ImageDraw.Draw(img)
+
+            is_orange = random.choice([True, False])
+
+            if is_orange:
+                circle_color = (228, 93, 44)
+                text_color = (255, 255, 255)
+            else:
+                circle_color = (255, 248, 231)
+                text_color = (228, 93, 44)
+
+            left_up = ((img_size - circle_size) // 2, (img_size - circle_size) // 2)
+            right_down = (left_up[0] + circle_size, left_up[1] + circle_size)
+
+            draw.ellipse([left_up, right_down], fill=circle_color)
+
+            if not is_orange:
+                border_width = 6
+                for offset in range(border_width):
+                    draw.ellipse(
+                        [left_up[0]-offset, left_up[1]-offset, right_down[0]+offset, right_down[1]+offset],
+                        outline=(228, 93, 44)
+                    )
+
             try:
-                font = ImageFont.truetype("arial.ttf", 60)
+                font = ImageFont.truetype("arial.ttf", size=circle_size // 3)
             except:
-                print('pop')
-                font = ImageFont.load_default(60)
-            draw.ellipse((40, 40, 160, 160), fill=(255, 140, 0))
+                font = ImageFont.load_default()
+
             text = str(val)
             bbox = draw.textbbox((0, 0), text, font=font)
+            text_x = (img_size - bbox[2]) / 2
+            text_y = (img_size - bbox[3]) / 2
             draw.text(
-                ((100 - bbox[2] // 2), (100 - bbox[3] // 2)),
+                (text_x, text_y),
                 text,
-                fill=(255, 255, 255),
+                fill=text_color,
                 font=font
             )
 
@@ -230,17 +186,15 @@ class IdentityImageView(APIView):
             buffer = BytesIO()
             img.save(buffer, format="PNG")
             path = default_storage.save(filename, ContentFile(buffer.getvalue()))
-            print('pooooop')
-            print(path)
-            # Save to DB
+
             CaptchaImage.objects.create(
                 image_id=image_id,
                 user=pr,
                 code=val,
                 image_file=path
             )
-            image_url = os.path.join(settings.MEDIA_URL, filename)
-            image_url = f'http://api.irandemo.online/{image_url}'
+
+            image_url = request.build_absolute_uri(settings.MEDIA_URL + filename)
             response_data.append({
                 "image_id": str(image_id),
                 "image_url": image_url

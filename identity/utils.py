@@ -5,23 +5,12 @@ class IdentityUtils:
     BASE_URL = f'https://api.kavenegar.com/v1/{settings.KAVENEGAR_API_KEY}'
 
     @staticmethod
-    def send_sms(phone: str, code: str) -> dict:
+    def send_verification_code(phone: str, code: str, template: str) -> dict:
         url = f'{IdentityUtils.BASE_URL}/verify/lookup.json'
         params = {
             'receptor': phone,
             'token': code,
-            'template': settings.KAVENEGAR_TEMPLATE
-        }
-        response = requests.get(url, params=params, timeout=5)
-        response.raise_for_status()
-        return response.json()
-
-    @staticmethod
-    def send_voice_call(phone: str, code: str) -> dict:
-        url = f'{IdentityUtils.BASE_URL}/call/maketts.json'
-        params = {
-            'receptor': phone,
-            'message': f'کد تایید شما {code} می‌باشد'
+            'template': template
         }
         response = requests.get(url, params=params, timeout=5)
         response.raise_for_status()
