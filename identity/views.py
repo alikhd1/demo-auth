@@ -44,19 +44,24 @@ class RegisterView(APIView):
 
         code = str(random.randint(10, 99))
 
+        second_code = str(random.randint(10, 99))
+
+        while second_code == code:
+            second_code = str(random.randint(10, 99))
+
         user = UserProfile.objects.filter(national_code=national_code).first()
         if user:
             return Response({'error': 'User with this national ID already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
         pr, created = UserProfile.objects.update_or_create(
             phone=phone,
-            defaults={'national_code': national_code, 'code': code, 'method': method}
+            defaults={'national_code': national_code, 'code': code, 'second_code': second_code, 'method': method}
         )
 
         if method == 'sms':
-            IdentityUtils.send_verification_code(phone, code, settings.KAVENEGAR_SMS_TEMPLATE)
+            IdentityUtils.send_verification_code(phone, code, second_code, settings.KAVENEGAR_SMS_TEMPLATE)
         elif method == 'call':
-            IdentityUtils.send_verification_code(phone, code, settings.KAVENEGAR_CALL_TEMPLATE)
+            IdentityUtils.send_verification_code(phone, code, second_code, settings.KAVENEGAR_CALL_TEMPLATE)
         else:
             pass
 
@@ -94,13 +99,19 @@ class LoginView(APIView):
 
         code = str(random.randint(10, 99))
 
+        second_code = str(random.randint(10, 99))
+
+        while second_code == code:
+            second_code = str(random.randint(10, 99))
+
         user.code = code
+        user.second_code = second_code
         user.save()
 
         if method == 'sms':
-            IdentityUtils.send_verification_code(phone, code, settings.KAVENEGAR_SMS_TEMPLATE)
+            IdentityUtils.send_verification_code(phone, code, second_code, settings.KAVENEGAR_SMS_TEMPLATE)
         elif method == 'call':
-            IdentityUtils.send_verification_code(phone, code, settings.KAVENEGAR_CALL_TEMPLATE)
+            IdentityUtils.send_verification_code(phone, code, second_code, settings.KAVENEGAR_CALL_TEMPLATE)
         else:
             pass
 
@@ -121,7 +132,7 @@ class IdentityImageView(APIView):
         responses={200: openapi.Response('OK'), 400: 'Bad request'}
     )
     def get(self, request):
-        phone = request.GET.get('phone')
+        phone = request.query_params.get('phone')
         if not phone:
             return Response({'error': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -131,8 +142,16 @@ class IdentityImageView(APIView):
             return Response({'error': 'Phone number not found'}, status=status.HTTP_404_NOT_FOUND)
 
         options = [random.randint(10, 99) for _ in range(random.randint(5, 10))]
-        if pr.code not in options:
-            options[random.randint(0, 4)] = int(pr.code)
+
+        length = len(options)
+
+        if int(pr.code) not in options:
+            options[random.randint(0, length - 1)] = int(pr.code)
+
+
+        if int(pr.second_code) not in options:
+            options[random.randint(0, length - 1)] = int(pr.second_code)
+
 
         response_data = []
 
@@ -206,29 +225,37 @@ class IdentityImageView(APIView):
 
 class VerifyCodeView(APIView):
     @swagger_auto_schema(
-        operation_description="Verify selected code for a phone number",
+        operation_description="Verify two selected codes for a phone number (order matters)",
         request_body=VerifyCodeSerializer,
-        responses={200: openapi.Response('Login successful'), 400: 'Bad request'}
+        responses={200: openapi.Response('Verification successful'), 400: 'Bad request'}
     )
     def post(self, request):
-        image_id = request.data.get('image_id')
         phone = request.data.get('phone')
-        if not image_id or not phone:
-            return Response({'error': 'image_id and phone are required'}, status=status.HTTP_400_BAD_REQUEST)
+        image_ids = request.data.get('image_ids')
+
+        if not phone or not image_ids or not isinstance(image_ids, list) or len(image_ids) != 2:
+            return Response({'error': 'phone and exactly two image_ids are required in order'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         try:
             pr = UserProfile.objects.get(phone=phone)
-            captcha = CaptchaImage.objects.get(image_id=image_id, user=pr, is_valid=True)
-        except (UserProfile.DoesNotExist, CaptchaImage.DoesNotExist):
-            return Response({'error': 'Invalid phone or image_id'}, status=status.HTTP_400_BAD_REQUEST)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        try:
+            captcha1 = CaptchaImage.objects.get(image_id=image_ids[0], user=pr, is_valid=True)
+            captcha2 = CaptchaImage.objects.get(image_id=image_ids[1], user=pr, is_valid=True)
+        except CaptchaImage.DoesNotExist:
+            return Response({'error': 'Invalid image_id or expired image'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if int(captcha.code) == int(pr.code):
-            captcha.is_valid = False
-            captcha.save()
+        if str(captcha1.code) == str(pr.code) and str(captcha2.code) == str(pr.second_code):
+            captcha1.is_valid = False
+            captcha2.is_valid = False
+            captcha1.save()
+            captcha2.save()
             return Response({'status': 'success'})
         else:
-            return Response({'status': 'fail'})
+            return Response({'status': 'fail', 'message': 'Incorrect codes or wrong order'})
 
 
 def generate_custom_qr_code(request):

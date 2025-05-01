@@ -6,6 +6,7 @@ class UserProfile(models.Model):
     phone = models.CharField(max_length=11, unique=True)
     national_code = models.CharField(max_length=10, unique=True)
     code = models.CharField(max_length=6)
+    second_code = models.CharField(max_length=6, null=True, blank=True)
     method = models.CharField(max_length=10, choices=[('sms', 'SMS'), ('call', 'Call'), ('ussd', 'USSD')])
     created_at = models.DateTimeField(auto_now_add=True)
     uuid = models.UUIDField(default=uuid.uuid4, editable=False)

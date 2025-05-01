@@ -50,13 +50,19 @@ class RegisterSerializer(serializers.Serializer):
 
 class VerifyCodeSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=15)
-    image_id = serializers.CharField(max_length=50)
-
+    image_ids = serializers.ListField(
+        child=serializers.CharField(max_length=50),
+        min_length=2,
+        max_length=2
+    )
 
     class Meta:
         swagger_schema_fields = {
             "example": {
                 "phone": "09123456789",
-                "image_id": "6ec7c7fc-937a-4a49-91c1-1f9a7ffe38f3"
+                "image_ids": [
+                    "6ec7c7fc-937a-4a49-91c1-1f9a7ffe38f3",
+                    "2b9b2c1d-4e60-4375-87a6-37f8432a0a12"
+                ]
             }
         }

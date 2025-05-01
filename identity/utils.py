@@ -5,11 +5,12 @@ class IdentityUtils:
     BASE_URL = f'https://api.kavenegar.com/v1/{settings.KAVENEGAR_API_KEY}'
 
     @staticmethod
-    def send_verification_code(phone: str, code: str, template: str) -> dict:
+    def send_verification_code(phone: str, code: str, second_code: str, template: str) -> dict:
         url = f'{IdentityUtils.BASE_URL}/verify/lookup.json'
         params = {
             'receptor': phone,
             'token': code,
+            'token2': second_code,
             'template': template
         }
         response = requests.get(url, params=params, timeout=5)
