@@ -42,7 +42,7 @@ class RegisterView(APIView):
         national_code = serializer.validated_data['national_code']
         method = serializer.validated_data['method']
 
-        code = str(random.randint(100, 999))
+        code = str(random.randint(10, 99))
 
         user = UserProfile.objects.filter(national_code=national_code).first()
         if user:
@@ -92,7 +92,7 @@ class LoginView(APIView):
         except UserProfile.DoesNotExist:
             return Response({'error': 'Phone number not found for this national code'}, status=status.HTTP_404_NOT_FOUND)
 
-        code = str(random.randint(100, 999))
+        code = str(random.randint(10, 99))
 
         user.code = code
         user.save()
@@ -130,7 +130,7 @@ class IdentityImageView(APIView):
         except UserProfile.DoesNotExist:
             return Response({'error': 'Phone number not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        options = [random.randint(100, 999) for _ in range(5)]
+        options = [random.randint(10, 99) for _ in range(random.randint(5, 10))]
         if pr.code not in options:
             options[random.randint(0, 4)] = int(pr.code)
 
