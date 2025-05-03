@@ -127,12 +127,20 @@ class IdentityImageView(APIView):
                 openapi.IN_QUERY,
                 description="Phone number",
                 type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'type',
+                openapi.IN_QUERY,
+                description="type",
+                type=openapi.TYPE_STRING
             )
         ],
         responses={200: openapi.Response('OK'), 400: 'Bad request'}
     )
     def get(self, request):
         phone = request.query_params.get('phone')
+        type_param = request.query_params.get('type')  # Fixed here
+
         if not phone:
             return Response({'error': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -154,22 +162,25 @@ class IdentityImageView(APIView):
 
 
         response_data = []
-
+        is_orange = False
         for val in options:
             circle_size = random.randint(120, 180)
-
             img_size = circle_size + 40
+
             img = Image.new('RGB', (img_size, img_size), color=(255, 248, 231))
             draw = ImageDraw.Draw(img)
 
-            is_orange = random.choice([True, False])
-
-            if is_orange:
-                circle_color = (228, 93, 44)
-                text_color = (255, 255, 255)
+            if type_param == "2":
+                circle_color = (96, 53, 163)
+                text_color = (190, 187, 186)
             else:
-                circle_color = (255, 248, 231)
-                text_color = (228, 93, 44)
+                is_orange = random.choice([True, False])
+                if is_orange:
+                    circle_color = (228, 93, 44)
+                    text_color = (255, 255, 255)
+                else:
+                    circle_color = (255, 248, 231)
+                    text_color = (228, 93, 44)
 
             left_up = ((img_size - circle_size) // 2, (img_size - circle_size) // 2)
             right_down = (left_up[0] + circle_size, left_up[1] + circle_size)
@@ -187,7 +198,7 @@ class IdentityImageView(APIView):
             try:
                 font = ImageFont.truetype("arial.ttf", size=circle_size // 3)
             except:
-                font = ImageFont.load_default(60)
+                font = ImageFont.load_default(80)
 
             text = str(val)
             bbox = draw.textbbox((0, 0), text, font=font)
