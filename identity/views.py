@@ -127,12 +127,20 @@ class IdentityImageView(APIView):
                 openapi.IN_QUERY,
                 description="Phone number",
                 type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'style',
+                openapi.IN_QUERY,
+                description='Style (1 = orange, 2 = purple)',
+                type=openapi.TYPE_STRING
             )
         ],
         responses={200: openapi.Response('OK'), 400: 'Bad request'}
     )
     def get(self, request):
         phone = request.query_params.get('phone')
+        style = request.query_params.get('style', '1')
+
         if not phone:
             return Response({'error': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -144,48 +152,50 @@ class IdentityImageView(APIView):
         options = [random.randint(10, 99) for _ in range(random.randint(5, 10))]
 
         length = len(options)
-
         if int(pr.code) not in options:
             options[random.randint(0, length - 1)] = int(pr.code)
-
-
         if int(pr.second_code) not in options:
             options[random.randint(0, length - 1)] = int(pr.second_code)
-
 
         response_data = []
 
         for val in options:
             circle_size = random.randint(120, 180)
-
             img_size = circle_size + 40
             img = Image.new('RGB', (img_size, img_size), color=(255, 248, 231))
             draw = ImageDraw.Draw(img)
 
-            is_orange = random.choice([True, False])
+            if style == "1":
+                is_orange = random.choice([True, False])
+                circle_color = (228, 93, 44) if is_orange else (255, 248, 231)
+                text_color = (255, 255, 255) if is_orange else (228, 93, 44)
 
-            if is_orange:
-                circle_color = (228, 93, 44)
-                text_color = (255, 255, 255)
+                left_up = ((img_size - circle_size) // 2, (img_size - circle_size) // 2)
+                right_down = (left_up[0] + circle_size, left_up[1] + circle_size)
+
+                draw.ellipse([left_up, right_down], fill=circle_color)
+
+                if not is_orange:
+                    border_width = 6
+                    for offset in range(border_width):
+                        draw.ellipse(
+                            [left_up[0] - offset, left_up[1] - offset, right_down[0] + offset, right_down[1] + offset],
+                            outline=(228, 93, 44)
+                        )
+
+            elif style == "2":
+                circle_color = (97, 45, 144)
+                text_color = (158, 158, 158)
+
+                left_up = ((img_size - circle_size) // 2, (img_size - circle_size) // 2)
+                right_down = (left_up[0] + circle_size, left_up[1] + circle_size)
+                draw.ellipse([left_up, right_down], fill=circle_color)
+
             else:
-                circle_color = (255, 248, 231)
-                text_color = (228, 93, 44)
-
-            left_up = ((img_size - circle_size) // 2, (img_size - circle_size) // 2)
-            right_down = (left_up[0] + circle_size, left_up[1] + circle_size)
-
-            draw.ellipse([left_up, right_down], fill=circle_color)
-
-            if not is_orange:
-                border_width = 6
-                for offset in range(border_width):
-                    draw.ellipse(
-                        [left_up[0]-offset, left_up[1]-offset, right_down[0]+offset, right_down[1]+offset],
-                        outline=(228, 93, 44)
-                    )
+                return Response({'error': 'Invalid style parameter. Choose 1 or 2.'}, status=400)
 
             try:
-                font = ImageFont.truetype("arial.ttf", size=circle_size // 3)
+                font = ImageFont.truetype("arial.ttf", size=circle_size // 2)
             except:
                 font = ImageFont.load_default(60)
 
@@ -193,12 +203,7 @@ class IdentityImageView(APIView):
             bbox = draw.textbbox((0, 0), text, font=font)
             text_x = (img_size - bbox[2]) / 2
             text_y = (img_size - bbox[3]) / 2
-            draw.text(
-                (text_x, text_y),
-                text,
-                fill=text_color,
-                font=font
-            )
+            draw.text((text_x, text_y), text, fill=text_color, font=font)
 
             image_id = uuid.uuid4()
             filename = f"captcha/{image_id}.png"
@@ -213,15 +218,13 @@ class IdentityImageView(APIView):
                 image_file=path
             )
 
-            image_url = os.path.join(settings.MEDIA_URL, filename)
-            image_url = f'http://api.irandemo.online{image_url}'
+            image_url = f'http://api.irandemo.online{os.path.join(settings.MEDIA_URL, filename)}'
             response_data.append({
                 "image_id": str(image_id),
                 "image_url": image_url
             })
 
         return Response(response_data)
-
 
 class VerifyCodeView(APIView):
     @swagger_auto_schema(
