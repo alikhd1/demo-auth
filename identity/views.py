@@ -3,6 +3,9 @@ import math
 import os
 
 from django.http import HttpResponse, JsonResponse
+from qrcode.image.styledpil import StyledPilImage
+from qrcode.image.styles.colormasks import SolidFillColorMask
+from qrcode.image.styles.moduledrawers import CircleModuleDrawer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -197,7 +200,7 @@ class IdentityImageView(APIView):
             try:
                 font = ImageFont.truetype("arial.ttf", size=circle_size // 2)
             except:
-                font = ImageFont.load_default(60)
+                font = ImageFont.load_default(80)
 
             text = str(val)
             bbox = draw.textbbox((0, 0), text, font=font)
@@ -265,26 +268,34 @@ def generate_custom_qr_code(request):
     # Generate random text
     random_text = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
-    # Generate QR code
+    # Create QR code
     qr = qrcode.QRCode(
         version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
         box_size=10,
         border=4
     )
     qr.add_data(random_text)
     qr.make(fit=True)
 
-    # Generate QR image with custom colors
-    img = qr.make_image(fill_color="#F2ECCF", back_color="#d45930")
+    # Create QR code image (black foreground, white background)
+    qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
 
-    # Save the image to the media folder
+    # Convert white background to transparent
+    pixels = qr_img.getdata()
+    new_pixels = []
+    for pixel in pixels:
+        if pixel[:3] == (255, 255, 255):
+            new_pixels.append((255, 255, 255, 0))  # Transparent
+        else:
+            new_pixels.append(pixel)
+    qr_img.putdata(new_pixels)
+
+    # Save the image
     image_name = f"{random_text}.png"
     image_path = os.path.join(settings.MEDIA_ROOT, image_name)
+    qr_img.save(image_path, "PNG")
 
-    # Write image to storage
-    img.save(image_path)
-
-    # Generate the URL of the saved image
+    # Return the image URL
     image_url = os.path.join(settings.MEDIA_URL, image_name)
-
     return JsonResponse({"qr_code_url": image_url})
