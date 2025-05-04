@@ -130,19 +130,12 @@ class IdentityImageView(APIView):
                 openapi.IN_QUERY,
                 description="Phone number",
                 type=openapi.TYPE_STRING
-            ),
-            openapi.Parameter(
-                'style',
-                openapi.IN_QUERY,
-                description='Style (1 = orange, 2 = purple)',
-                type=openapi.TYPE_STRING
             )
         ],
         responses={200: openapi.Response('OK'), 400: 'Bad request'}
     )
     def get(self, request):
         phone = request.query_params.get('phone')
-        style = request.query_params.get('style', '1')
 
         if not phone:
             return Response({'error': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -165,42 +158,16 @@ class IdentityImageView(APIView):
         for val in options:
             circle_size = random.randint(120, 180)
             img_size = circle_size + 40
-            img = Image.new('RGB', (img_size, img_size), color=(255, 248, 231))
+
+            img = Image.new('RGBA', (img_size, img_size), (0, 0, 0, 0))
             draw = ImageDraw.Draw(img)
 
-            if style == "1":
-                is_orange = random.choice([True, False])
-                circle_color = (228, 93, 44) if is_orange else (255, 248, 231)
-                text_color = (255, 255, 255) if is_orange else (228, 93, 44)
-
-                left_up = ((img_size - circle_size) // 2, (img_size - circle_size) // 2)
-                right_down = (left_up[0] + circle_size, left_up[1] + circle_size)
-
-                draw.ellipse([left_up, right_down], fill=circle_color)
-
-                if not is_orange:
-                    border_width = 6
-                    for offset in range(border_width):
-                        draw.ellipse(
-                            [left_up[0] - offset, left_up[1] - offset, right_down[0] + offset, right_down[1] + offset],
-                            outline=(228, 93, 44)
-                        )
-
-            elif style == "2":
-                circle_color = (97, 45, 144)
-                text_color = (158, 158, 158)
-
-                left_up = ((img_size - circle_size) // 2, (img_size - circle_size) // 2)
-                right_down = (left_up[0] + circle_size, left_up[1] + circle_size)
-                draw.ellipse([left_up, right_down], fill=circle_color)
-
-            else:
-                return Response({'error': 'Invalid style parameter. Choose 1 or 2.'}, status=400)
+            text_color = (128, 127, 125)
 
             try:
                 font = ImageFont.truetype("arial.ttf", size=circle_size // 2)
             except:
-                font = ImageFont.load_default(80)
+                font = ImageFont.load_default()
 
             text = str(val)
             bbox = draw.textbbox((0, 0), text, font=font)
