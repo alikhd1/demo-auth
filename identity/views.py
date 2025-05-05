@@ -1,31 +1,22 @@
-import base64
-import math
 import os
-
-from django.http import HttpResponse, JsonResponse
-from qrcode.image.styledpil import StyledPilImage
-from qrcode.image.styles.colormasks import SolidFillColorMask
-from qrcode.image.styles.moduledrawers import CircleModuleDrawer
+from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from .models import UserProfile, CaptchaImage
-import random
 from .serializers import RegisterSerializer, VerifyCodeSerializer, LoginSerializer
 from .utils import IdentityUtils
-from drf_yasg.utils import swagger_auto_schema, no_body
+from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import uuid
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.conf import settings
-import io
 import random
 import string
 import qrcode
-from django.http import HttpResponse
 
 
 class RegisterView(APIView):
@@ -54,7 +45,7 @@ class RegisterView(APIView):
 
         user = UserProfile.objects.filter(national_code=national_code).first()
         if user:
-            return Response({'error': 'User with this national ID already exists'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'کاربری با این کد ملی قبلاً ثبت‌نام کرده است.'}, status=status.HTTP_400_BAD_REQUEST)
 
         pr, created = UserProfile.objects.update_or_create(
             phone=phone,
@@ -68,7 +59,7 @@ class RegisterView(APIView):
         else:
             pass
 
-        return Response({'status': 'ok', 'message': 'Code sent successfully'})
+        return Response({'status': 'موفق', 'message': 'کد با موفقیت ارسال شد.'})
 
 
 
@@ -89,16 +80,16 @@ class LoginView(APIView):
         method = serializer.validated_data['method']
 
         if method not in ['sms', 'call', 'ussd']:
-            return Response({'error': 'Invalid method'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'روش وارد شده نامعتبر است.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not national_code:
-            return Response({'error': 'National code is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'وارد کردن کد ملی الزامی است.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = UserProfile.objects.get(national_code=national_code)
             phone = user.phone
         except UserProfile.DoesNotExist:
-            return Response({'error': 'Phone number not found for this national code'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'کاربری با این کد ملی یافت نشد. لطفاً ابتدا ثبت‌نام کنید.'}, status=status.HTTP_404_NOT_FOUND)
 
         code = str(random.randint(10, 99))
 
@@ -118,7 +109,7 @@ class LoginView(APIView):
         else:
             pass
 
-        return Response({'status': 'ok', 'message': 'Code sent successfully', 'phone': phone})
+        return Response({'status': 'موفق', 'message': 'کد با موفقیت ارسال شد', 'phone': phone})
 
 
 class IdentityImageView(APIView):
@@ -145,12 +136,12 @@ class IdentityImageView(APIView):
         style = request.query_params.get('style', '1')
 
         if not phone:
-            return Response({'error': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'شماره تلفن اجباری هست'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             pr = UserProfile.objects.get(phone=phone)
         except UserProfile.DoesNotExist:
-            return Response({'error': 'Phone number not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'شماره تلفن یافت نشد'}, status=status.HTTP_404_NOT_FOUND)
 
         options = [random.randint(10, 99) for _ in range(random.randint(5, 10))]
 
@@ -195,7 +186,7 @@ class IdentityImageView(APIView):
                 draw.ellipse([left_up, right_down], fill=circle_color)
 
             else:
-                return Response({'error': 'Invalid style parameter. Choose 1 or 2.'}, status=400)
+                return Response({'error': 'پارامتر style نامعتبر است. یکی از مقادیر ۱ یا ۲ را انتخاب کنید.'}, status=400)
 
             try:
                 font = ImageFont.truetype("arial.ttf", size=circle_size // 2)
@@ -240,28 +231,28 @@ class VerifyCodeView(APIView):
         image_ids = request.data.get('image_ids')
 
         if not phone or not image_ids or not isinstance(image_ids, list) or len(image_ids) != 2:
-            return Response({'error': 'phone and exactly two image_ids are required in order'},
+            return Response({'error': 'ماره تلفن و دقیقاً دو شناسه تصویر (image_id) به ترتیب لازم است.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
         try:
             pr = UserProfile.objects.get(phone=phone)
         except UserProfile.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'کاربر یافت نشد'}, status=status.HTTP_404_NOT_FOUND)
 
         try:
             captcha1 = CaptchaImage.objects.get(image_id=image_ids[0], user=pr, is_valid=True)
             captcha2 = CaptchaImage.objects.get(image_id=image_ids[1], user=pr, is_valid=True)
         except CaptchaImage.DoesNotExist:
-            return Response({'error': 'Invalid image_id or expired image'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'شناسهٔ تصویر نامعتبر است یا تصویر منقضی شده است.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if str(captcha1.code) == str(pr.code) and str(captcha2.code) == str(pr.second_code):
             captcha1.is_valid = False
             captcha2.is_valid = False
             captcha1.save()
             captcha2.save()
-            return Response({'status': 'success'})
+            return Response({'status': 'موفق', 'message': 'احراز هویت شما با موفقیت انجام شد.'})
         else:
-            return Response({'status': 'fail', 'message': 'Incorrect codes or wrong order'})
+            return Response({'status': 'ناموفق', 'message': 'کدها نادرست هستند یا ترتیب ارسال آن‌ها اشتباه است.'})
 
 
 def generate_custom_qr_code(request):

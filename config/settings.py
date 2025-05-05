@@ -92,6 +92,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+REST_FRAMEWORK = {
+    'DEFAULT_THROTTLE_CLASSES': [
+        'identity.throttling.RequestThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon_req': '4/minute',
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
