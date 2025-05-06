@@ -153,7 +153,7 @@ class IdentityImageView(APIView):
             img = Image.new('RGBA', (img_size, img_size), (0, 0, 0, 0))
             draw = ImageDraw.Draw(img)
 
-            text_color = (190, 187, 186)
+            text_color = (241, 236, 207)
 
             try:
                 font = ImageFont.truetype("arialbd.ttf", size=circle_size // 2)
