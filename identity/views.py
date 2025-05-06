@@ -198,7 +198,7 @@ class VerifyCodeView(APIView):
         image_ids = request.data.get('image_ids')
 
         if not phone or not image_ids or not isinstance(image_ids, list) or len(image_ids) != 2:
-            return Response({'error': 'شماره تلفن و دقیقاً دو شناسه تصویر (image_id) به ترتیب لازم است.'},
+            return Response({'error': 'شماره تلفن و انتخاب دو تصویر الزامی است.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
         try:
