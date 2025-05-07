@@ -243,7 +243,7 @@ def generate_custom_qr_code(request):
     qr.make(fit=True)
 
     # Create QR code image (black foreground, white background)
-    qr_img = qr.make_image(fill_color="white", back_color=None).convert("RGBA")
+    qr_img = qr.make_image(fill_color="white", back_color="#00000000").convert("RGBA")
 
     # Convert white background to transparent
     pixels = qr_img.getdata()
