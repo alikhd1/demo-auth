@@ -17,9 +17,11 @@ from django.conf import settings
 import random
 import string
 import qrcode
+from .throttling import ConditionalUserThrottle
 
 
 class RegisterView(APIView):
+    throttle_classes = [ConditionalUserThrottle]
     @swagger_auto_schema(
         operation_description="Login using phone number and method",
         request_body=RegisterSerializer,
@@ -65,6 +67,8 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    throttle_classes = [ConditionalUserThrottle]
+
     @swagger_auto_schema(
         operation_description="Login using phone number and method",
         request_body=LoginSerializer,
@@ -136,13 +140,15 @@ class IdentityImageView(APIView):
         except UserProfile.DoesNotExist:
             return Response({'error': 'شماره تلفن یافت نشد'}, status=status.HTTP_404_NOT_FOUND)
 
-        options = [random.randint(10, 99) for _ in range(random.randint(5, 10))]
+        options = [random.randint(10, 99) for _ in range(random.randint(8, 12))]
 
         length = len(options)
         if int(pr.code) not in options:
-            options[random.randint(0, length - 1)] = int(pr.code)
+            options.append(int(pr.code))
         if int(pr.second_code) not in options:
-            options[random.randint(0, length - 1)] = int(pr.second_code)
+            options.append(int(pr.second_code))
+
+        random.shuffle(options)
 
         response_data = []
 
@@ -237,7 +243,7 @@ def generate_custom_qr_code(request):
     qr.make(fit=True)
 
     # Create QR code image (black foreground, white background)
-    qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
+    qr_img = qr.make_image(fill_color="white", back_color=None).convert("RGBA")
 
     # Convert white background to transparent
     pixels = qr_img.getdata()

@@ -93,11 +93,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 REST_FRAMEWORK = {
-    'DEFAULT_THROTTLE_CLASSES': [
-        'identity.throttling.RequestThrottle',
-    ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon_req': '4/minute',
+        'login_user': '4/min',
+        'signup_user': '3/min',
     }
 }
 
