@@ -223,9 +223,9 @@ class VerifyCodeView(APIView):
             captcha2.is_valid = False
             captcha1.save()
             captcha2.save()
-            return Response({'status': 'موفق', 'message': 'احراز هویت شما با موفقیت انجام شد.'})
+            return Response({'status': 'موفق', 'message': 'احراز هویت شما با موفقیت انجام شد.', 'status_code': status.HTTP_200_OK})
         else:
-            return Response({'status': 'ناموفق', 'message': 'کدها نادرست هستند یا ترتیب ارسال آن‌ها اشتباه است.'})
+            return Response({'status': 'ناموفق', 'message': 'کدها نادرست هستند یا ترتیب ارسال آن‌ها اشتباه است.', 'status_code': status.HTTP_400_BAD_REQUEST})
 
 
 def generate_custom_qr_code(request):
