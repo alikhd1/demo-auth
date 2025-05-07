@@ -242,17 +242,17 @@ def generate_custom_qr_code(request):
     qr.add_data(random_text)
     qr.make(fit=True)
 
-    # Create QR code image (black foreground, white background)
-    qr_img = qr.make_image(fill_color="white", back_color="#00000000").convert("RGBA")
+    # Create QR code image (white QR code, black background)
+    qr_img = qr.make_image(fill_color="white", back_color="black").convert("RGBA")
 
-    # Convert white background to transparent
+    # Convert black background to transparent
     pixels = qr_img.getdata()
     new_pixels = []
     for pixel in pixels:
-        if pixel[:3] == (255, 255, 255):
-            new_pixels.append((255, 255, 255, 0))  # Transparent
+        if pixel[:3] == (0, 0, 0):  # background (black) => transparent
+            new_pixels.append((0, 0, 0, 0))
         else:
-            new_pixels.append(pixel)
+            new_pixels.append(pixel)  # keep white QR code
     qr_img.putdata(new_pixels)
 
     # Save the image
