@@ -140,7 +140,7 @@ class IdentityImageView(APIView):
         except UserProfile.DoesNotExist:
             return Response({'error': 'شماره تلفن یافت نشد'}, status=status.HTTP_404_NOT_FOUND)
 
-        options = [random.randint(10, 99) for _ in range(random.randint(8, 12))]
+        options = [random.randint(10, 99) for _ in range(random.randint(5, 10))]
 
         length = len(options)
         if int(pr.code) not in options:
