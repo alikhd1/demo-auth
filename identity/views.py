@@ -140,14 +140,17 @@ class IdentityImageView(APIView):
         except UserProfile.DoesNotExist:
             return Response({'error': 'شماره تلفن یافت نشد'}, status=status.HTTP_404_NOT_FOUND)
 
-        options = [random.randint(10, 99) for _ in range(random.randint(5, 10))]
+        final_count = random.randint(5, 10)
+        fixed_codes = list({int(pr.code), int(pr.second_code)})
+        random_count = final_count - len(fixed_codes)
 
-        length = len(options)
-        if int(pr.code) not in options:
-            options.append(int(pr.code))
-        if int(pr.second_code) not in options:
-            options.append(int(pr.second_code))
+        options = set()
+        while len(options) < random_count:
+            val = random.randint(10, 99)
+            if val not in fixed_codes:
+                options.add(val)
 
+        options = list(options) + fixed_codes
         random.shuffle(options)
 
         response_data = []
@@ -192,6 +195,8 @@ class IdentityImageView(APIView):
             })
 
         return Response(response_data)
+
+
 
 class VerifyCodeView(APIView):
     @swagger_auto_schema(
